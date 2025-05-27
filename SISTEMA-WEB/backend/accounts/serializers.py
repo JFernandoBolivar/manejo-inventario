@@ -48,6 +48,12 @@ class UserSerializer(serializers.ModelSerializer):
         if status == 'superAdmin':
             # superAdmin siempre debe tener department='none'
             data['department'] = 'none'
+        elif status == 'coordinador':
+            # coordinador solo puede pertenecer al departamento OAC
+            if department != 'OAC':
+                raise serializers.ValidationError({
+                    "department": "Los usuarios con rol coordinador solo pueden pertenecer al departamento OAC."
+                })
         elif status in ['admin', 'basic'] and (not department or department == 'none'):
             # admin y basic deben tener un departamento válido
             raise serializers.ValidationError({
@@ -115,6 +121,12 @@ class AdminUserUpdateSerializer(UserSerializer):
         if status == 'superAdmin':
             # superAdmin siempre debe tener department='none'
             data['department'] = 'none'
+        elif status == 'coordinador':
+            # coordinador solo puede pertenecer al departamento OAC
+            if department != 'OAC':
+                raise serializers.ValidationError({
+                    "department": "Los usuarios con rol coordinador solo pueden pertenecer al departamento OAC."
+                })
         elif status in ['admin', 'basic'] and (department == 'none'):
             # admin y basic deben tener un departamento válido
             raise serializers.ValidationError({

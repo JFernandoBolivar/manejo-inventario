@@ -12,6 +12,7 @@ class IsOwnerOrAdmin(permissions.BasePermission):
     Reglas:
     - superAdmin puede editar cualquier usuario
     - admin solo puede editar usuarios de su mismo departamento
+    - coordinador solo puede editar usuarios básicos de su mismo departamento (OAC)
     - usuarios básicos solo pueden editar su propio perfil
     """
     def has_object_permission(self, request, view, obj):
@@ -30,6 +31,15 @@ class IsOwnerOrAdmin(permissions.BasePermission):
                 # Mismo departamento y no es superAdmin
                 return (obj.department == request.user.department and 
                         obj.status != 'superAdmin')
+            return False
+        
+        # coordinador solo puede editar usuarios básicos de su departamento (OAC)
+        if request.user.status == 'coordinador':
+            # Verificar si el objeto es un usuario
+            if isinstance(obj, User):
+                # Mismo departamento (OAC), solo usuarios básicos
+                return (obj.department == request.user.department and 
+                        obj.status == 'basic')
             return False
         
         # Usuarios básicos solo pueden editar su propio perfil (ya verificado arriba)
@@ -105,6 +115,7 @@ class UserUpdateView(generics.RetrieveUpdateAPIView):
     Reglas de acceso:
     - superAdmin puede ver y actualizar cualquier usuario
     - admin puede ver y actualizar usuarios de su mismo departamento 
+    - coordinador puede ver y actualizar usuarios básicos de su departamento (OAC)
     - usuarios básicos solo pueden ver y actualizar su propio perfil
     """
     queryset = User.objects.all()
@@ -115,6 +126,7 @@ class UserUpdateView(generics.RetrieveUpdateAPIView):
         Filtrar el queryset según el rol y departamento del usuario:
         - superAdmin ve todos los usuarios
         - admin ve usuarios de su mismo departamento
+        - coordinador ve usuarios básicos de su departamento (OAC)
         - usuarios básicos solo se ven a sí mismos
         """
         user = self.request.user
@@ -123,6 +135,9 @@ class UserUpdateView(generics.RetrieveUpdateAPIView):
         elif user.status == 'admin':
             # Admin solo ve usuarios de su departamento
             return User.objects.filter(department=user.department)
+        elif user.status == 'coordinador':
+            # Coordinador solo ve usuarios básicos de su departamento (OAC)
+            return User.objects.filter(department=user.department, status='basic')
         else:
             # Usuario básico solo se ve a sí mismo
             return User.objects.filter(id=user.id)
@@ -140,7 +155,13 @@ class UserUpdateView(generics.RetrieveUpdateAPIView):
                 target_user = self.get_object()
                 if target_user.department == user.department:
                     return AdminUserUpdateSerializer
-            # Para usuarios básicos o cuando admin edita usuarios de otro departamento
+            elif user.status == 'coordinador':
+                # coordinador puede editar algunos campos de usuarios básicos en su departamento
+                target_user = self.get_object()
+                if target_user.department == user.department and target_user.status == 'basic':
+                    # Para coordinador se usa el UserUpdateSerializer que no permite cambiar department
+                    return UserUpdateSerializer
+            # Para usuarios básicos o cuando admin/coordinador edita usuarios fuera de su ámbito
             return UserUpdateSerializer
         # Para operaciones GET
         return UserSerializer

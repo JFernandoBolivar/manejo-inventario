@@ -26,6 +26,7 @@ class User(AbstractUser):
         ('admin', _('Admin')),
         ('superAdmin', _('Super Admin')),
         ('basic', _('Basic')),
+        ('coordinador', _('Coordinador')),
     ]
     
     # Opciones de departamento
@@ -41,7 +42,7 @@ class User(AbstractUser):
     phone = models.CharField(_('phone number'), max_length=15, blank=True, null=True)
     status = models.CharField(
         _('status'),
-        max_length=10,
+        max_length=15,
         choices=STATUS_CHOICES,
         default='basic',
     )
@@ -64,6 +65,7 @@ class User(AbstractUser):
         Validar las combinaciones de status y department:
         - superAdmin debe tener department='none'
         - admin y basic deben tener un department válido (no 'none')
+        - coordinador debe tener department='oac'
         """
         super().clean()
         
@@ -72,10 +74,16 @@ class User(AbstractUser):
             self.department = 'none'
             return  # No aplicar más validaciones para superusuarios
         
+        # coordinador solo puede pertenecer al departamento OAC
+        if self.status == 'coordinador' and self.department != 'oac':
+            raise ValidationError({
+                'department': _('El rol de Coordinador solo puede ser asignado a usuarios del departamento OAC')
+            })
+            
         # admin y basic deben tener un department válido (no 'none')
         if self.department == 'none':
             raise ValidationError({
-                'department': _('Los usuarios admin y basic deben tener un departamento asignado (OAC, Farmacia o Almacén)')
+                'department': _('Los usuarios admin, basic y coordinador deben tener un departamento asignado (OAC, Farmacia o Almacén)')
             })
     
     def save(self, *args, **kwargs):
