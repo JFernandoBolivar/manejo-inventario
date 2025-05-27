@@ -21,5 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('accounts.urls')),
     path('api-auth/', include('rest_framework.urls')),
-    path('api/Inventory/', include('Inventory.urls')),  # Update this line
+    path('api/', include('form.urls')), 
+    path('api/Inventory/', include('Inventory.urls')),  
 ]

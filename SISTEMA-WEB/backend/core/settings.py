@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # Local apps
     'accounts',
     'Inventory',
+    'form',
 ]
 
 MIDDLEWARE = [
@@ -163,7 +164,7 @@ REST_FRAMEWORK = {
         'core.authentication.CSRFExemptSessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ],
 }
 
